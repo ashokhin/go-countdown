@@ -1,6 +1,7 @@
 # go-countdown
 
 [![CI](https://github.com/ashokhin/go-countdown/actions/workflows/ci.yml/badge.svg)](https://github.com/ashokhin/go-countdown/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ashokhin/go-countdown)](https://github.com/ashokhin/go-countdown/releases/latest)
 
 A small desktop countdown-timer app: add a name and a target date/time,
 watch it count down live (`Xday(s) Xhour(s) Xminute(s) Xsecond(s)`), soonest
