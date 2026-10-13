@@ -1,0 +1,10 @@
+bin/
+build/bin
+node_modules
+frontend/dist
+frontend/wailsjs
+frontend/package.json.md5
+
+# Editor/OS cruft
+.DS_Store
+*.swp
