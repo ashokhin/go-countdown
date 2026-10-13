@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history + tags: the Makefile derives the app's displayed
+          # version from `git describe --tags`, which needs both to find
+          # the tag that triggered this run.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # Builds both platforms into ./bin — Windows needs no extra
+      # toolchain since Wails talks to WebView2 via pure-Go syscalls, same
+      # as a local `make build-all`.
+      - name: Build
+        run: make build-all
+
+      - name: Rename binaries for the release
+        run: |
+          mv bin/go-countdown bin/go-countdown-linux-amd64
+          mv bin/go-countdown.exe bin/go-countdown-windows-amd64.exe
+
+      # A tag can be force-moved to a different commit and re-pushed (e.g.
+      # after fixing something CI caught) — this reruns the workflow for
+      # the same tag name, and `gh release create` refuses to touch an
+      # existing release. Deleting any previous release for this tag first
+      # (never the tag itself — only `--cleanup-tag` would do that) makes
+      # re-running idempotent instead of requiring a manual cleanup in the
+      # GitHub UI.
+      - name: Delete previous release for this tag, if any
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${{ github.ref_name }}" --yes || true
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            bin/go-countdown-linux-amd64 \
+            bin/go-countdown-windows-amd64.exe \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

@@ -1,5 +1,7 @@
 # go-countdown
 
+[![CI](https://github.com/ashokhin/go-countdown/actions/workflows/ci.yml/badge.svg)](https://github.com/ashokhin/go-countdown/actions/workflows/ci.yml)
+
 A small desktop countdown-timer app: add a name and a target date/time,
 watch it count down live (`Xday(s) Xhour(s) Xminute(s) Xsecond(s)`), soonest
 timer first.
@@ -79,20 +81,24 @@ reload, plus a browser-devtools bridge at http://localhost:34115).
 Timers are saved to `$XDG_CONFIG_HOME/wails-timer/events.json` (or the OS
 equivalent via `os.UserConfigDir`).
 
-## Versioning
+## Versioning & releases
 
 The version shown in the app's About dialog comes from the nearest git tag
 (`git describe --tags --always --dirty`), injected at link time by the
 Makefile — see `VERSION`/`LDFLAGS` there and `Version` in
-[`internal/app/info.go`](internal/app/info.go). To cut a release:
+[`internal/app/info.go`](internal/app/info.go). A build from a commit with
+no tag yet, or outside a git checkout entirely, falls back to `dev`.
+
+Pushing a `vX.Y.Z` tag triggers [`release.yml`](.github/workflows/release.yml),
+which builds both platforms and publishes them as a GitHub Release:
 
 ```sh
 git tag v1.1.0
-make build-all
+git push origin v1.1.0
 ```
 
-A build from a commit with no tag yet, or outside a git checkout entirely,
-falls back to `dev`.
+[`ci.yml`](.github/workflows/ci.yml) runs `go vet`/`go test` on every push
+and pull request against `main`.
 
 ## License
 

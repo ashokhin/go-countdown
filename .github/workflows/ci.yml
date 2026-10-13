@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Ubuntu 24.04 runners only ship webkit2gtk-4.1 (4.0 was dropped), so
+      # building/vetting package main (which cgo-links against it) needs
+      # both the matching dev package and the webkit2_41 build tag — see
+      # the same reasoning in the Makefile's LINUX_TAGS.
+      - name: Install Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # Chicken-and-egg: `wails generate module` compiles main.go (to
+      # introspect the bound App struct via reflection), which fails outright
+      # on main.go's //go:embed all:frontend/dist if that gitignored
+      # directory doesn't exist yet — and it's vite build (further down)
+      # that normally creates it, but vite build needs the bindings this
+      # step generates to resolve main.js's import first. A placeholder
+      # file breaks the cycle; vite build overwrites the whole directory
+      # with the real build output right after.
+      - name: Generate Wails bindings
+        run: |
+          mkdir -p frontend/dist
+          touch frontend/dist/.gitkeep
+          wails generate module
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Vet
+        run: go vet -tags webkit2_41 ./...
+
+      - name: Test
+        run: go test ./...
