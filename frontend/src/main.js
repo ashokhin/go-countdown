@@ -1,5 +1,5 @@
 import { GetTimers, AddTimer, UpdateTimer, RemoveTimer, GetAppInfo } from '../wailsjs/go/app/App';
-import { EventsOn } from '../wailsjs/runtime/runtime';
+import { EventsOn, BrowserOpenURL } from '../wailsjs/runtime/runtime';
 
 const timerRows = document.getElementById('timer-rows');
 const emptyState = document.getElementById('empty-state');
@@ -253,7 +253,7 @@ async function openAbout() {
     field(aboutBody, 'Version', info.version);
     field(aboutBody, 'Author', info.author);
     field(aboutBody, 'License', `${info.license} © ${info.year}`);
-    aboutRepoLink.href = info.repoUrl;
+    aboutRepoLink.onclick = () => BrowserOpenURL(info.repoUrl);
     aboutBackdrop.hidden = false;
 }
 
